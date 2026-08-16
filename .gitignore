@@ -1,0 +1,25 @@
+# Dependencias
+node_modules/
+
+# Compilados
+dist/
+build/
+web/dist/
+backend/dist/
+
+# Base de datos SQLite (se regenera con: npx prisma migrate dev && npm run seed)
+*.db
+*.db-journal
+
+# Variables de entorno (cada equipo usa las suyas, ver los .env.example)
+.env
+.env.local
+
+# Expo
+.expo/
+mobile/.expo/
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+*.log

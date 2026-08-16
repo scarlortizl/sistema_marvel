@@ -1,0 +1,41 @@
+{
+  "name": "marvel-api",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "seed": "tsx prisma/seed.ts",
+    "migrate": "prisma migrate dev",
+    "studio": "prisma studio",
+    "sql": "tsx scripts/exportar-sql.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "API REST Marvel - Heroes y Misiones",
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^4.22.2",
+    "jsonwebtoken": "^9.0.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.25",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.2.0",
+    "prisma": "^6.19.3",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}

@@ -1,0 +1,65 @@
+// Esquema de la base de datos - Plataforma Marvel
+// Motor: SQLite (Prisma no soporta enum nativo en SQLite, por eso los campos
+// de tipo enum se guardan como String y se validan con Zod en la capa de API).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id         Int      @id @default(autoincrement())
+  nombre     String
+  email      String   @unique
+  password   String // hash bcrypt
+  rol        String   @default("CONSULTA") // ADMIN | CONSULTA
+  creado_en  DateTime @default(now())
+
+  @@map("usuarios")
+}
+
+model Superheroe {
+  id              Int      @id @default(autoincrement())
+  nombre          String   @unique
+  nombre_real     String
+  poder_principal String
+  nivel_poder     Int // 1 a 100
+  imagen_url      String
+  estado          String   @default("ACTIVO") // ACTIVO | INACTIVO
+  creado_en       DateTime @default(now())
+
+  misiones Mision[]
+
+  @@map("superheroes")
+}
+
+model Mision {
+  id            Int      @id @default(autoincrement())
+  titulo        String
+  descripcion   String
+  ubicacion     String
+  fecha         DateTime
+  nivel_peligro String // BAJO | MEDIO | ALTO
+  estado        String   @default("PENDIENTE") // PENDIENTE | EN_PROGRESO | COMPLETADA
+  superheroe_id Int
+  creado_en     DateTime @default(now())
+
+  superheroe Superheroe @relation(fields: [superheroe_id], references: [id])
+
+  @@map("misiones")
+}
+
+// Lista negra de tokens: permite que POST /api/auth/logout invalide
+// de verdad el JWT y no solo lo borre del cliente.
+model TokenRevocado {
+  id         Int      @id @default(autoincrement())
+  jti        String   @unique
+  expira_en  DateTime
+  revocado_en DateTime @default(now())
+
+  @@map("tokens_revocados")
+}

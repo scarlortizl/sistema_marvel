@@ -1,0 +1,673 @@
+{
+  "info": {
+    "name": "Marvel API - Evaluacion 2do Parcial",
+    "description": "Pruebas de autenticacion JWT, CRUD de superheroes y misiones, roles ADMIN/CONSULTA y validaciones.\n\nOrden sugerido: 1) Autenticacion > Login ADMIN (guarda el token automaticamente). 2) Superheroes. 3) Misiones. 4) Seguridad y validaciones.\n\nVariables: base_url, token, token_consulta, heroe_id, mision_id.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:4000/api" },
+    { "key": "token", "value": "" },
+    { "key": "token_consulta", "value": "" },
+    { "key": "heroe_id", "value": "1" },
+    { "key": "mision_id", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "1. Autenticacion",
+      "item": [
+        {
+          "name": "Register (nuevo usuario CONSULTA)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Maria Hill\",\n  \"email\": \"maria.hill@marvel.com\",\n  \"password\": \"Password123\",\n  \"rol\": \"CONSULTA\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201 (o 409 si ya existe)', function () {",
+                  "  pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login ADMIN",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@marvel.com\",\n  \"password\": \"Admin1234\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login correcto', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve token y rol ADMIN', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.token).to.be.a('string');",
+                  "  pm.expect(json.usuario.rol).to.eql('ADMIN');",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login CONSULTA",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"consulta@marvel.com\",\n  \"password\": \"Consulta1234\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login correcto', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('token_consulta', pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me (perfil del token)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/auth/me", "host": ["{{base_url}}"], "path": ["auth", "me"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No expone la password', function () {",
+                  "  pm.expect(pm.response.json().usuario.password).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login con password incorrecta (401)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@marvel.com\",\n  \"password\": \"claveIncorrecta\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Responde 401', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Superheroes",
+      "item": [
+        {
+          "name": "Listar superheroes",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/heroes", "host": ["{{base_url}}"], "path": ["heroes"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve al menos 8 heroes', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.datos.length).to.be.at.least(8);",
+                  "  pm.collectionVariables.set('heroe_id', json.datos[0].id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar por nombre (?nombre=iron)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/heroes?nombre=iron",
+              "host": ["{{base_url}}"],
+              "path": ["heroes"],
+              "query": [{ "key": "nombre", "value": "iron" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Responde 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalle de superheroe",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/heroes/{{heroe_id}}", "host": ["{{base_url}}"], "path": ["heroes", "{{heroe_id}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye las misiones del heroe', function () {",
+                  "  pm.expect(pm.response.json().misiones).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear superheroe (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/heroes", "host": ["{{base_url}}"], "path": ["heroes"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Loki\",\n  \"nombre_real\": \"Loki Laufeyson\",\n  \"poder_principal\": \"Ilusiones y engano\",\n  \"nivel_poder\": 76,\n  \"imagen_url\": \"https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/images/lg/414-loki.jpg\",\n  \"estado\": \"ACTIVO\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201 (o 409 si ya existe)', function () {",
+                  "  pm.expect([201, 409]).to.include(pm.response.code);",
+                  "  if (pm.response.code === 201) pm.collectionVariables.set('heroe_id', pm.response.json().id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar superheroe (ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/heroes/{{heroe_id}}", "host": ["{{base_url}}"], "path": ["heroes", "{{heroe_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"nivel_poder\": 80,\n  \"estado\": \"INACTIVO\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('El nivel se actualizo', function () {",
+                  "  pm.expect(pm.response.json().nivel_poder).to.eql(80);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar superheroe (ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/heroes/{{heroe_id}}", "host": ["{{base_url}}"], "path": ["heroes", "{{heroe_id}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 al eliminar, o 409 si el heroe tiene misiones', function () {",
+                  "  pm.expect([200, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Misiones",
+      "item": [
+        {
+          "name": "Listar misiones",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/misiones", "host": ["{{base_url}}"], "path": ["misiones"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve al menos 6 misiones', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.datos.length).to.be.at.least(6);",
+                  "  pm.collectionVariables.set('mision_id', json.datos[0].id);",
+                  "  // Se guarda un heroe valido para poder crear una mision a continuacion.",
+                  "  pm.collectionVariables.set('heroe_id', json.datos[0].superheroe.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalle de mision",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/misiones/{{mision_id}}", "host": ["{{base_url}}"], "path": ["misiones", "{{mision_id}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Responde 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear mision (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/misiones", "host": ["{{base_url}}"], "path": ["misiones"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Rescate en la torre\",\n  \"descripcion\": \"Evacuar civiles atrapados en la Torre de los Vengadores.\",\n  \"ubicacion\": \"Nueva York, EE. UU.\",\n  \"fecha\": \"2026-09-15\",\n  \"nivel_peligro\": \"ALTO\",\n  \"estado\": \"PENDIENTE\",\n  \"superheroe_id\": {{heroe_id}}\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('mision_id', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar mision (ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/misiones/{{mision_id}}", "host": ["{{base_url}}"], "path": ["misiones", "{{mision_id}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"COMPLETADA\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Estado actualizado', function () {",
+                  "  pm.expect(pm.response.json().estado).to.eql('COMPLETADA');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar mision (ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/misiones/{{mision_id}}", "host": ["{{base_url}}"], "path": ["misiones", "{{mision_id}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Responde 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Seguridad y validaciones",
+      "item": [
+        {
+          "name": "Sin token (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/heroes", "host": ["{{base_url}}"], "path": ["heroes"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Responde 401', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CONSULTA intenta crear heroe (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_consulta}}" }
+            ],
+            "url": { "raw": "{{base_url}}/heroes", "host": ["{{base_url}}"], "path": ["heroes"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ultron\",\n  \"nombre_real\": \"Ultron\",\n  \"poder_principal\": \"Inteligencia artificial\",\n  \"nivel_poder\": 90,\n  \"imagen_url\": \"https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/images/lg/680-ultron.jpg\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));",
+                  "// Requiere haber ejecutado antes 'Login CONSULTA'."
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CONSULTA intenta eliminar heroe (403)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_consulta}}" }],
+            "url": { "raw": "{{base_url}}/heroes/1", "host": ["{{base_url}}"], "path": ["heroes", "1"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Responde 403', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Heroe inexistente (404)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/heroes/9999", "host": ["{{base_url}}"], "path": ["heroes", "9999"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Responde 404', () => pm.response.to.have.status(404));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "nivel_poder fuera de rango (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/heroes", "host": ["{{base_url}}"], "path": ["heroes"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prueba Nivel\",\n  \"nombre_real\": \"Prueba\",\n  \"poder_principal\": \"Prueba\",\n  \"nivel_poder\": 150,\n  \"imagen_url\": \"https://ejemplo.com/imagen.jpg\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Explica el error', function () {",
+                  "  pm.expect(pm.response.json().detalles[0].mensaje).to.include('1 y 100');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nombre de heroe duplicado (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/heroes", "host": ["{{base_url}}"], "path": ["heroes"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Thor\",\n  \"nombre_real\": \"Otro Thor\",\n  \"poder_principal\": \"Trueno\",\n  \"nivel_poder\": 50,\n  \"imagen_url\": \"https://ejemplo.com/imagen.jpg\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Responde 409', () => pm.response.to.have.status(409));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Email duplicado en register (409)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Duplicado\",\n  \"email\": \"admin@marvel.com\",\n  \"password\": \"Password123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Responde 409', () => pm.response.to.have.status(409));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Password menor a 8 caracteres (422)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Prueba\",\n  \"email\": \"prueba.corta@marvel.com\",\n  \"password\": \"1234\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Responde 422', () => pm.response.to.have.status(422));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mision con superheroe inexistente (404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/misiones", "host": ["{{base_url}}"], "path": ["misiones"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Mision huerfana\",\n  \"descripcion\": \"Mision sin superheroe valido\",\n  \"ubicacion\": \"Desconocida\",\n  \"fecha\": \"2026-10-01\",\n  \"nivel_peligro\": \"ALTO\",\n  \"superheroe_id\": 9999\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Responde 404', () => pm.response.to.have.status(404));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mision sin fecha (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/misiones", "host": ["{{base_url}}"], "path": ["misiones"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Mision sin fecha\",\n  \"descripcion\": \"Falta la fecha obligatoria\",\n  \"ubicacion\": \"Quito\",\n  \"nivel_peligro\": \"BAJO\",\n  \"superheroe_id\": {{heroe_id}}\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Responde 422', () => pm.response.to.have.status(422));"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Cierre de sesion",
+      "item": [
+        {
+          "name": "Logout del usuario CONSULTA",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_consulta}}" }],
+            "url": { "raw": "{{base_url}}/auth/logout", "host": ["{{base_url}}"], "path": ["auth", "logout"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Responde 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El token cerrado ya no sirve (401)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_consulta}}" }],
+            "url": { "raw": "{{base_url}}/heroes", "host": ["{{base_url}}"], "path": ["heroes"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401 porque el token fue revocado', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
