@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { mensajeDeError } from '../api/cliente';
 import { servicioHeroes } from '../api/servicios';
@@ -8,9 +8,41 @@ import { TarjetaHeroe } from '../componentes/TarjetaHeroe';
 import { useAuth } from '../contexto/AuthContext';
 import type { Superheroe } from '../tipos';
 
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.7" />
+      <path d="m15.5 15.5 4 4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function Arrow({ direction }: { direction: 'left' | 'right' }) {
+  return (
+    <svg className={direction === 'left' ? 'is-left' : ''} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 20h4l11-11-4-4L4 16v4Zm9-13 4 4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function Heroes() {
   const { esAdmin } = useAuth();
-
   const [heroes, setHeroes] = useState<Superheroe[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -18,12 +50,16 @@ export function Heroes() {
   const [aEliminar, setAEliminar] = useState<Superheroe | null>(null);
   const [eliminando, setEliminando] = useState(false);
   const [aviso, setAviso] = useState('');
+  const [activo, setActivo] = useState(0);
+  const hoverTimer = useRef<number | null>(null);
 
   const cargar = useCallback(async (nombre: string) => {
     setCargando(true);
     setError('');
     try {
-      setHeroes(await servicioHeroes.listar(nombre.trim() || undefined));
+      const datos = await servicioHeroes.listar(nombre.trim() || undefined);
+      setHeroes(datos);
+      setActivo(0);
     } catch (error) {
       setError(mensajeDeError(error));
     } finally {
@@ -31,8 +67,6 @@ export function Heroes() {
     }
   }, []);
 
-  // La busqueda se envia a la API con un pequeno retraso para no disparar
-  // una peticion por cada tecla presionada.
   useEffect(() => {
     const temporizador = setTimeout(() => cargar(busqueda), 350);
     return () => clearTimeout(temporizador);
@@ -47,6 +81,7 @@ export function Heroes() {
       setHeroes((actuales) => actuales.filter((heroe) => heroe.id !== aEliminar.id));
       setAviso(`${aEliminar.nombre} fue eliminado correctamente`);
       setAEliminar(null);
+      setActivo((actual) => Math.max(0, Math.min(actual, heroes.length - 2)));
     } catch (error) {
       setError(mensajeDeError(error));
       setAEliminar(null);
@@ -54,6 +89,47 @@ export function Heroes() {
       setEliminando(false);
     }
   };
+
+  const mover = useCallback((direccion: number) => {
+    setActivo((actual) => {
+      if (heroes.length === 0) return 0;
+      return (actual + direccion + heroes.length) % heroes.length;
+    });
+  }, [heroes.length]);
+
+  const iniciarHoverScroll = (direccion: number) => {
+    detenerHoverScroll();
+    mover(direccion);
+    hoverTimer.current = window.setInterval(() => mover(direccion), 850);
+  };
+
+  const detenerHoverScroll = () => {
+    if (hoverTimer.current) {
+      window.clearInterval(hoverTimer.current);
+      hoverTimer.current = null;
+    }
+  };
+
+  useEffect(() => () => detenerHoverScroll(), []);
+
+  const posicionRelativa = (indice: number) => {
+    const total = heroes.length;
+    let diferencia = indice - activo;
+    if (diferencia > total / 2) diferencia -= total;
+    if (diferencia < -total / 2) diferencia += total;
+    return diferencia;
+  };
+
+  const heroeActivo = heroes[activo];
+
+  useEffect(() => {
+    const manejar = (evento: KeyboardEvent) => {
+      if (evento.key === 'ArrowLeft') mover(-1);
+      if (evento.key === 'ArrowRight') mover(1);
+    };
+    window.addEventListener('keydown', manejar);
+    return () => window.removeEventListener('keydown', manejar);
+  }, [mover]);
 
   return (
     <section>
@@ -66,9 +142,10 @@ export function Heroes() {
   : `${heroes.length} ${heroes.length === 1 ? 'heroe encontrado' : 'heroes encontrados'}`}
           </p>
         </div>
+
         {esAdmin && (
-          <Link className="boton boton--primario" to="/heroes/nuevo">
-            + Nuevo superheroe
+          <Link className="button button--primary button--create" to="/heroes/nuevo">
+            <span>+</span> Registrar superhéroe
           </Link>
         )}
       </div>
@@ -82,33 +159,130 @@ export function Heroes() {
 />
 
       {aviso && <div className="alerta alerta--ok">{aviso}</div>}
-      {error && <div className="alerta alerta--error">{error}</div>}
+      {error && heroes.length > 0 && <div className="alerta alerta--error">{error}</div>}
 
-      {/* Los tres estados de la pantalla: cargando, error y sin resultados. */}
       {cargando ? (
-        <Cargando texto="Cargando superheroes..." />
+        <Cargando texto="Recuperando perfiles de superhéroes..." />
       ) : error && heroes.length === 0 ? (
         <MensajeError mensaje={error} onReintentar={() => cargar(busqueda)} />
       ) : heroes.length === 0 ? (
         <SinDatos
           mensaje={
             busqueda
-              ? `No se encontraron superheroes que coincidan con "${busqueda}"`
-              : 'Todavia no hay superheroes registrados'
+              ? `No se encontraron superhéroes que coincidan con "${busqueda}"`
+              : 'Todavía no hay superhéroes registrados'
           }
         />
       ) : (
-        <div className="grilla">
-          {heroes.map((heroe) => (
-            <TarjetaHeroe key={heroe.id} heroe={heroe} esAdmin={esAdmin} onEliminar={setAEliminar} />
-          ))}
+        <div className="hero-carousel">
+          <div className="hero-carousel__stars" aria-hidden="true" />
+          <div className="hero-carousel__floor" aria-hidden="true" />
+
+          <div
+            className="hero-carousel__hover-zone hero-carousel__hover-zone--left"
+            onMouseEnter={() => iniciarHoverScroll(-1)}
+            onMouseLeave={detenerHoverScroll}
+            aria-hidden="true"
+          />
+          <div
+            className="hero-carousel__hover-zone hero-carousel__hover-zone--right"
+            onMouseEnter={() => iniciarHoverScroll(1)}
+            onMouseLeave={detenerHoverScroll}
+            aria-hidden="true"
+          />
+
+          <button className="hero-carousel__nav hero-carousel__nav--left" onClick={() => mover(-1)} aria-label="Héroe anterior">
+            <Arrow direction="left" />
+          </button>
+
+          <div className="hero-carousel__viewport">
+            <div className="hero-carousel__track">
+              {heroes.map((heroe, indice) => {
+                const posicion = posicionRelativa(indice);
+                const visible = Math.abs(posicion) <= 3;
+
+                return (
+                  <div
+                    key={heroe.id}
+                    className={`hero-carousel__slide ${visible ? 'is-visible' : ''}`}
+                    style={{ '--position': posicion } as CSSProperties}
+                  >
+                    <TarjetaHeroe
+                      heroe={heroe}
+                      esAdmin={esAdmin}
+                      activo={indice === activo}
+                      posicion={posicion}
+                      onSeleccionar={() => setActivo(indice)}
+                      onEliminar={setAEliminar}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <button className="hero-carousel__nav hero-carousel__nav--right" onClick={() => mover(1)} aria-label="Héroe siguiente">
+            <Arrow direction="right" />
+          </button>
+
+          <div className="hero-carousel__caption">
+            <span className="hero-carousel__counter">
+              {String(activo + 1).padStart(2, '0')} / {String(heroes.length).padStart(2, '0')}
+            </span>
+
+            <h2>{heroeActivo?.nombre}</h2>
+            <p className="hero-carousel__realname">{heroeActivo?.nombre_real}</p>
+
+            <div className="hero-carousel__caption-top">
+              <span className={`etiqueta etiqueta--${heroeActivo?.estado.toLowerCase()}`}>
+                <i className="status-dot" />
+                {heroeActivo?.estado}
+              </span>
+              <span className="hero-carousel__caption-unit">
+                UNIT / {String(heroeActivo?.id ?? 0).padStart(3, '0')}
+              </span>
+            </div>
+
+            <div className="hero-carousel__caption-ability">
+              <span>PRIMARY ABILITY</span>
+              <p>{heroeActivo?.poder_principal}</p>
+            </div>
+
+            <div className="hero-carousel__power-module">
+              <div className="hero-carousel__power-head">
+                <span>POWER LEVEL</span>
+                <strong>
+                  {heroeActivo?.nivel_poder}
+                  <small>/100</small>
+                </strong>
+              </div>
+
+              <div className="hero-carousel__caption-bar">
+                <div
+                  className="hero-carousel__caption-fill"
+                  style={{ width: `${heroeActivo?.nivel_poder ?? 0}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="hero-carousel__dots">
+              {heroes.map((heroe, indice) => (
+                <button
+                  key={heroe.id}
+                  className={indice === activo ? 'is-active' : ''}
+                  onClick={() => setActivo(indice)}
+                  aria-label={`Mostrar ${heroe.nombre}`}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
       {aEliminar && (
         <DialogoConfirmacion
-          titulo="Eliminar superheroe"
-          mensaje={`Esta seguro de eliminar a ${aEliminar.nombre}? Esta accion no se puede deshacer.`}
+          titulo={`Eliminar ${aEliminar.nombre}`}
+          mensaje={`¿Está seguro de eliminar a ${aEliminar.nombre}? Esta acción no se puede deshacer.`}
           procesando={eliminando}
           onConfirmar={confirmarEliminacion}
           onCancelar={() => setAEliminar(null)}
