@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,173 +16,319 @@ import { API_URL } from '../config';
 import { useAuth } from '../contexto/AuthContext';
 import { tema } from '../tema';
 
+const logo = require('../assets/marvel-logo.png');
+
 export function LoginPantalla() {
   const { iniciarSesion } = useAuth();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
 
   const entrar = async () => {
-    // Validacion basica antes de gastar una peticion.
     if (!email.trim() || password.length < 8) {
-      setError('Ingrese un email valido y una password de al menos 8 caracteres');
+      setError('Ingrese un email válido y una contraseña de al menos 8 caracteres');
       return;
     }
 
     setError('');
     setEnviando(true);
+
     try {
       await iniciarSesion(email.trim(), password);
-    } catch (error) {
-      setError(mensajeDeError(error));
+    } catch (e) {
+      setError(mensajeDeError(e));
     } finally {
       setEnviando(false);
     }
   };
 
-  const usarCuenta = (correo: string, clave: string) => {
-    setEmail(correo);
-    setPassword(clave);
+  const completarAdmin = () => {
+    setEmail('admin@marvel.com');
+    setPassword('Admin1234');
+  };
+
+  const completarConsulta = () => {
+    setEmail('consulta@marvel.com');
+    setPassword('Consulta1234');
   };
 
   return (
-    <KeyboardAvoidingView style={estilos.contenedor} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={estilos.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={estilos.titulo}>MARVEL</Text>
-        <Text style={estilos.subtitulo}>Heroes y misiones</Text>
+    <KeyboardAvoidingView
+      style={s.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <View style={s.glow1} />
+      <View style={s.glow2} />
 
-        {error !== '' && <Text style={estilos.error}>{error}</Text>}
-
-        <Text style={estilos.etiqueta}>Email</Text>
-        <TextInput
-          style={estilos.input}
-          value={email}
-          onChangeText={setEmail}
-          placeholder="admin@marvel.com"
-          placeholderTextColor={tema.textoTenue}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-
-        <Text style={estilos.etiqueta}>Password</Text>
-        <TextInput
-          style={estilos.input}
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Minimo 8 caracteres"
-          placeholderTextColor={tema.textoTenue}
-          secureTextEntry
-        />
-
-        <TouchableOpacity style={estilos.boton} onPress={entrar} disabled={enviando}>
-          {enviando ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={estilos.botonTexto}>Iniciar sesion</Text>
-          )}
-        </TouchableOpacity>
-
-        <View style={estilos.ayuda}>
-          <Text style={estilos.ayudaTitulo}>Usuarios de prueba</Text>
-          <TouchableOpacity onPress={() => usarCuenta('admin@marvel.com', 'Admin1234')}>
-            <Text style={estilos.ayudaTexto}>ADMIN: admin@marvel.com / Admin1234</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => usarCuenta('consulta@marvel.com', 'Consulta1234')}>
-            <Text style={estilos.ayudaTexto}>CONSULTA: consulta@marvel.com / Consulta1234</Text>
-          </TouchableOpacity>
-          <Text style={estilos.api}>API: {API_URL}</Text>
+      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+        <View style={s.brand}>
+          <Image source={logo} style={s.logo} resizeMode="contain" />
+          <Text style={s.system}>HERO CONTROL SYSTEM</Text>
         </View>
+
+        <Text style={s.kicker}>MARVEL CONTROL NETWORK</Text>
+        <Text style={s.title}>Control central de héroes y operaciones.</Text>
+        <Text style={s.copy}>
+          Accede al sistema táctico para consultar superhéroes, favoritos y misiones.
+        </Text>
+
+        <View style={s.panel}>
+          <View style={s.panelLine} />
+
+          {error !== '' && <Text style={s.error}>{error}</Text>}
+
+          <Text style={s.label}>IDENTIFICADOR</Text>
+          <TextInput
+            style={s.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="admin@marvel.com"
+            placeholderTextColor="#686269"
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+
+          <Text style={s.label}>CLAVE DE ACCESO</Text>
+          <TextInput
+            style={s.input}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="••••••••"
+            placeholderTextColor="#686269"
+            secureTextEntry
+          />
+
+          <TouchableOpacity style={s.button} onPress={entrar} disabled={enviando} activeOpacity={0.85}>
+            {enviando ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={s.buttonText}>INGRESAR AL SISTEMA</Text>
+            )}
+          </TouchableOpacity>
+
+          <View style={s.demoSection}>
+            <View style={s.demoDivider} />
+            <Text style={s.demoTitle}>ACCESOS DE DEMOSTRACIÓN</Text>
+
+            <TouchableOpacity style={s.demoItem} onPress={completarAdmin} activeOpacity={0.85}>
+              <Text style={s.demoRole}>ADMIN</Text>
+              <Text style={s.demoEmail}>admin@marvel.com</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={s.demoItem} onPress={completarConsulta} activeOpacity={0.85}>
+              <Text style={s.demoRole}>CONSULTA</Text>
+              <Text style={s.demoEmail}>consulta@marvel.com</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={s.telemetry}>
+          <View>
+            <Text style={s.telemetryValue}>ONLINE</Text>
+            <Text style={s.telemetryLabel}>NETWORK</Text>
+          </View>
+          <View>
+            <Text style={s.telemetryValue}>SECURE</Text>
+            <Text style={s.telemetryLabel}>ACCESS</Text>
+          </View>
+          <View>
+            <Text style={s.telemetryValue}>24/7</Text>
+            <Text style={s.telemetryLabel}>CONTROL</Text>
+          </View>
+        </View>
+
+        <Text style={s.api}>API {API_URL}</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: {
+const s = StyleSheet.create({
+  root: {
     flex: 1,
     backgroundColor: tema.fondo,
+    overflow: 'hidden',
   },
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 46,
   },
-  titulo: {
-    color: tema.rojo,
-    fontSize: 34,
-    fontWeight: '800',
-    letterSpacing: 6,
-    textAlign: 'center',
+  glow1: {
+    position: 'absolute',
+    width: 330,
+    height: 330,
+    borderRadius: 200,
+    backgroundColor: 'rgba(127,29,45,.22)',
+    top: -130,
+    right: -120,
   },
-  subtitulo: {
-    color: tema.textoTenue,
-    textAlign: 'center',
+  glow2: {
+    position: 'absolute',
+    width: 260,
+    height: 260,
+    borderRadius: 160,
+    backgroundColor: 'rgba(230,36,41,.08)',
+    bottom: -100,
+    left: -120,
+  },
+  brand: {
+    alignItems: 'center',
     marginBottom: 28,
   },
-  etiqueta: {
+  logo: {
+    width: 154,
+    height: 58,
+  },
+  system: {
+    color: '#bdb8ba',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 3,
+    marginTop: 5,
+  },
+  kicker: {
+    color: tema.vinoClaro,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 2.2,
+    marginBottom: 10,
+  },
+  title: {
+    color: tema.texto,
+    fontSize: 31,
+    lineHeight: 34,
+    fontWeight: '900',
+    letterSpacing: -1.2,
+    maxWidth: 340,
+  },
+  copy: {
     color: tema.textoTenue,
     fontSize: 13,
-    marginBottom: 6,
+    lineHeight: 20,
+    marginTop: 12,
+    marginBottom: 25,
+    maxWidth: 330,
+  },
+  panel: {
+    backgroundColor: 'rgba(18,18,23,.94)',
+    borderWidth: 1,
+    borderColor: tema.borde,
+    padding: 18,
+    borderRadius: 18,
+  },
+  panelLine: {
+    height: 2,
+    width: 74,
+    backgroundColor: tema.rojo,
+    marginBottom: 18,
+  },
+  label: {
+    color: '#b7b0b4',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    marginBottom: 7,
   },
   input: {
-    backgroundColor: tema.superficie,
+    height: 50,
     borderWidth: 1,
-    borderColor: tema.borde,
+    borderColor: '#3a2a31',
+    backgroundColor: '#0d0d11',
     borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
     color: tema.texto,
-    marginBottom: 16,
+    paddingHorizontal: 14,
+    marginBottom: 15,
+    fontSize: 14,
   },
-  boton: {
+  button: {
+    height: 52,
     backgroundColor: tema.rojo,
     borderRadius: 10,
-    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 4,
+    justifyContent: 'center',
+    marginTop: 3,
   },
-  botonTexto: {
+  buttonText: {
     color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1.1,
   },
   error: {
-    backgroundColor: '#2a1414',
+    color: '#ff9da1',
+    backgroundColor: '#2b1015',
     borderWidth: 1,
-    borderColor: '#7a2b2b',
-    color: '#ff9a9a',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 16,
-    fontSize: 13,
-  },
-  ayuda: {
-    marginTop: 28,
-    borderTopWidth: 1,
-    borderTopColor: tema.borde,
-    paddingTop: 16,
-    gap: 8,
-  },
-  ayudaTitulo: {
-    color: tema.textoTenue,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  ayudaTexto: {
-    color: tema.textoTenue,
-    fontSize: 12,
-    backgroundColor: tema.superficie2,
-    borderWidth: 1,
-    borderColor: tema.borde,
+    borderColor: '#6c2631',
+    padding: 10,
     borderRadius: 8,
-    padding: 8,
+    marginBottom: 15,
+    fontSize: 12,
+  },
+  demoSection: {
+    marginTop: 20,
+  },
+  demoDivider: {
+    height: 1,
+    backgroundColor: '#2b2430',
+    marginBottom: 16,
+  },
+  demoTitle: {
+    color: '#a59ca1',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 2,
+    marginBottom: 14,
+  },
+  demoItem: {
+    minHeight: 58,
+    borderWidth: 1,
+    borderColor: '#302833',
+    backgroundColor: '#111118',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  demoRole: {
+    color: tema.vinoClaro,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  demoEmail: {
+    color: '#b5b0b3',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  telemetry: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    marginTop: 25,
+  },
+  telemetryValue: {
+    color: tema.texto,
+    fontSize: 11,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  telemetryLabel: {
+    color: '#6f696d',
+    fontSize: 8,
+    letterSpacing: 1.3,
+    textAlign: 'center',
+    marginTop: 3,
   },
   api: {
-    color: tema.textoTenue,
-    fontSize: 10,
-    marginTop: 4,
+    color: '#504b4e',
+    fontSize: 8,
     textAlign: 'center',
+    marginTop: 18,
   },
 });

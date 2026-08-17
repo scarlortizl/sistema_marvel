@@ -2,114 +2,48 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colorEtiqueta, tema } from '../tema';
 import type { Superheroe } from '../tipos';
 
-interface Props {
-  heroe: Superheroe;
-  esFavorito: boolean;
-  onAbrir: () => void;
-  onFavorito: () => void;
-}
+interface Props { heroe: Superheroe; esFavorito: boolean; onAbrir: () => void; onFavorito: () => void; }
 
-/** Fila del FlatList de superheroes. Recibe todo por props. */
 export function TarjetaHeroe({ heroe, esFavorito, onAbrir, onFavorito }: Props) {
   return (
-    <TouchableOpacity style={estilos.tarjeta} onPress={onAbrir} activeOpacity={0.75}>
-      <Image source={{ uri: heroe.imagen_url }} style={estilos.imagen} />
-
-      <View style={estilos.datos}>
-        <Text style={estilos.nombre}>{heroe.nombre}</Text>
-        <Text style={estilos.real}>{heroe.nombre_real}</Text>
-        <Text style={estilos.poder} numberOfLines={1}>
-          {heroe.poder_principal}
-        </Text>
-
-        <View style={estilos.barra}>
-          <View style={[estilos.relleno, { width: `${heroe.nivel_poder}%` }]} />
+    <TouchableOpacity style={s.card} onPress={onAbrir} activeOpacity={0.86}>
+      <View style={s.media}>
+        <Image source={{ uri: heroe.imagen_url }} style={s.image} />
+        <View style={s.mediaShade} />
+        <View style={s.topRow}>
+          <Text style={s.code}>HERO // {String(heroe.id).padStart(2,'0')}</Text>
+          <Text style={[s.status,{color:colorEtiqueta[heroe.estado]}]}>● {heroe.estado}</Text>
         </View>
-
-        <View style={estilos.pie}>
-          <Text style={estilos.nivel}>Nivel {heroe.nivel_poder}/100</Text>
-          <Text style={[estilos.etiqueta, { color: colorEtiqueta[heroe.estado] }]}>{heroe.estado}</Text>
+        <TouchableOpacity style={s.fav} onPress={onFavorito} hitSlop={10}>
+          <Text style={[s.star,esFavorito&&s.starOn]}>{esFavorito?'★':'☆'}</Text>
+        </TouchableOpacity>
+        <View style={s.identity}>
+          <Text style={s.name}>{heroe.nombre}</Text>
+          <Text style={s.real}>{heroe.nombre_real}</Text>
         </View>
       </View>
-
-      <TouchableOpacity style={estilos.favorito} onPress={onFavorito} hitSlop={10}>
-        <Text style={[estilos.estrella, esFavorito && estilos.estrellaActiva]}>
-          {esFavorito ? '★' : '☆'}
-        </Text>
-      </TouchableOpacity>
+      <View style={s.body}>
+        <Text style={s.micro}>PRIMARY ABILITY</Text>
+        <Text style={s.power}>{heroe.poder_principal}</Text>
+        <View style={s.powerRow}><Text style={s.micro}>POWER LEVEL</Text><Text style={s.score}>{heroe.nivel_poder}/100</Text></View>
+        <View style={s.track}><View style={[s.fill,{width:`${Math.max(0,Math.min(100,heroe.nivel_poder))}%`}]} /></View>
+        <Text style={s.open}>VER PERFIL  →</Text>
+      </View>
     </TouchableOpacity>
   );
 }
 
-const estilos = StyleSheet.create({
-  tarjeta: {
-    flexDirection: 'row',
-    backgroundColor: tema.superficie,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: tema.borde,
-    marginBottom: 12,
-    overflow: 'hidden',
-  },
-  imagen: {
-    width: 92,
-    height: 120,
-    backgroundColor: '#000',
-  },
-  datos: {
-    flex: 1,
-    padding: 12,
-    gap: 2,
-  },
-  nombre: {
-    color: tema.texto,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  real: {
-    color: tema.textoTenue,
-    fontSize: 12,
-  },
-  poder: {
-    color: tema.texto,
-    fontSize: 13,
-    marginTop: 4,
-  },
-  barra: {
-    height: 6,
-    backgroundColor: tema.superficie2,
-    borderRadius: 999,
-    marginTop: 8,
-    overflow: 'hidden',
-  },
-  relleno: {
-    height: '100%',
-    backgroundColor: tema.rojo,
-  },
-  pie: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  nivel: {
-    color: tema.textoTenue,
-    fontSize: 11,
-  },
-  etiqueta: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  favorito: {
-    paddingHorizontal: 12,
-    paddingTop: 12,
-  },
-  estrella: {
-    fontSize: 22,
-    color: tema.textoTenue,
-  },
-  estrellaActiva: {
-    color: '#ffd479',
-  },
+const s=StyleSheet.create({
+  card:{backgroundColor:tema.superficie,borderWidth:1,borderColor:tema.borde,borderRadius:18,overflow:'hidden',marginBottom:18},
+  media:{height:285,backgroundColor:'#09090c',position:'relative'},image:{width:'100%',height:'100%'},
+  mediaShade:{position:'absolute',inset:0,backgroundColor:'rgba(0,0,0,.18)'},
+  topRow:{position:'absolute',top:14,left:14,right:14,flexDirection:'row',justifyContent:'space-between'},
+  code:{color:'#c7c1c4',fontSize:9,fontWeight:'800',letterSpacing:1.5},status:{fontSize:9,fontWeight:'900',letterSpacing:1},
+  fav:{position:'absolute',right:14,top:42,width:40,height:40,borderRadius:20,backgroundColor:'rgba(5,5,7,.72)',alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:'#49333b'},
+  star:{fontSize:22,color:'#a79fa3'},starOn:{color:tema.rojo},
+  identity:{position:'absolute',left:16,right:16,bottom:15},name:{color:'#fff',fontSize:28,fontWeight:'900',textTransform:'uppercase',letterSpacing:-.8},real:{color:'#c2bbbe',fontSize:12,marginTop:2},
+  body:{padding:16},micro:{color:'#847c80',fontSize:8,fontWeight:'800',letterSpacing:1.6},power:{color:tema.texto,fontSize:14,fontWeight:'700',marginTop:4,marginBottom:15},
+  powerRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},score:{color:tema.vinoClaro,fontSize:11,fontWeight:'900'},
+  track:{height:5,backgroundColor:'#282127',marginTop:7,overflow:'hidden'},fill:{height:'100%',backgroundColor:tema.rojo},
+  open:{color:'#d7d0d3',fontSize:10,fontWeight:'900',letterSpacing:1.2,marginTop:16},
 });
