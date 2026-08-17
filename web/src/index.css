@@ -5056,10 +5056,22 @@ h1,h2,h3,p { margin-top: 0; }
   background: rgba(88,12,16,.34);
 }
 
-.mission-card__action--primary:hover {
-  color: #fff;
-  border-color: rgba(230,36,41,.38);
-  background: rgba(126,16,23,.42);
+.tarjeta {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+}
+
+.tarjeta:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(230, 36, 41, 0.35);
+}
+
+.tarjeta__imagen img {
+  transition: transform 0.4s ease;
+}
+
+.tarjeta:hover .tarjeta__imagen img {
+  transform: scale(1.08);
 }
 
 .mission-card__action--ghost:hover {
@@ -5072,9 +5084,12 @@ h1,h2,h3,p { margin-top: 0; }
   height: 14px;
 }
 
-@keyframes missionCardIn {
-  from { opacity: 0; transform: translateY(24px) scale(.985); }
-  to { opacity: 1; transform: none; }
+.tarjeta__imagen .etiqueta {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+overflow: hidden;
 }
 
 @keyframes missionCardFill {

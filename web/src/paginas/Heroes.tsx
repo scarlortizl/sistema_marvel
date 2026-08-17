@@ -132,24 +132,15 @@ export function Heroes() {
   }, [mover]);
 
   return (
-    <section className="screen">
-      <div className="screen__hud-line">
-        <span>AVENGERS DATABASE</span>
-        <span>LIVE API FEED</span>
-      </div>
-
-      <div className="encabezado encabezado--hero">
-        <div className="title-reveal">
-          <p className="micro-label">HERO MONITORING DATABASE</p>
-          <h1>SUPERHÉROES</h1>
-          <div className="encabezado__meta">
-            <span className="status-chip"><i className="status-dot" /> SYSTEM ONLINE</span>
-            <span>
-              {cargando
-                ? 'Consultando la API...'
-                : `${heroes.length} ${heroes.length === 1 ? 'unidad registrada' : 'unidades registradas'}`}
-            </span>
-          </div>
+    <section>
+      <div className="encabezado">
+        <div>
+          <h2>Superheroes</h2>
+          <p className="encabezado__sub">
+            {cargando
+  ? 'Consultando la API...'
+  : `${heroes.length} ${heroes.length === 1 ? 'heroe encontrado' : 'heroes encontrados'}`}
+          </p>
         </div>
 
         {esAdmin && (
@@ -159,27 +150,13 @@ export function Heroes() {
         )}
       </div>
 
-      <div className="search-panel search-panel--minimal">
-        <SearchIcon />
-        <input
-          className="buscador"
-          type="search"
-          value={busqueda}
-          onChange={(evento) => setBusqueda(evento.target.value)}
-          placeholder="Buscar superhéroe..."
-          aria-label="Buscar superhéroe por nombre"
-        />
-        {busqueda && (
-          <button
-            type="button"
-            className="search-panel__clear"
-            onClick={() => setBusqueda('')}
-            aria-label="Limpiar búsqueda"
-          >
-            ×
-          </button>
-        )}
-      </div>
+      <input
+  className="buscador"
+  type="search"
+  value={busqueda}
+  onChange={(evento) => setBusqueda(evento.target.value)}
+  placeholder="Buscar superheroe por nombre..."
+/>
 
       {aviso && <div className="alerta alerta--ok">{aviso}</div>}
       {error && heroes.length > 0 && <div className="alerta alerta--error">{error}</div>}
