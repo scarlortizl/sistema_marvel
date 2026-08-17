@@ -61,7 +61,9 @@ export function Heroes() {
         <div>
           <h2>Superheroes</h2>
           <p className="encabezado__sub">
-            {cargando ? 'Consultando la API...' : `${heroes.length} heroe(s) encontrados`}
+            {cargando
+  ? 'Consultando la API...'
+  : `${heroes.length} ${heroes.length === 1 ? 'heroe encontrado' : 'heroes encontrados'}`}
           </p>
         </div>
         {esAdmin && (
@@ -72,12 +74,12 @@ export function Heroes() {
       </div>
 
       <input
-        className="buscador"
-        type="search"
-        value={busqueda}
-        onChange={(evento) => setBusqueda(evento.target.value)}
-        placeholder="Buscar superheroe por nombre..."
-      />
+  className="buscador"
+  type="search"
+  value={busqueda}
+  onChange={(evento) => setBusqueda(evento.target.value)}
+  placeholder="Buscar superheroe por nombre..."
+/>
 
       {aviso && <div className="alerta alerta--ok">{aviso}</div>}
       {error && <div className="alerta alerta--error">{error}</div>}
